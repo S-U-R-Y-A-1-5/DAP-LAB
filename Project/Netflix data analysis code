@@ -1,0 +1,182 @@
+#importing libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings 
+warnings.filterwarnings("ignore")
+
+#loading and understanding the data
+df=pd.read_csv("netflix_titles.csv")
+print(df.head())
+print(df.info())
+print(df.describe())
+print(df.shape)
+
+#checking null values and resolving it
+print(df.isnull().sum())
+df.dropna(inplace=True)
+print(df.isnull().sum())
+  
+#checking for duplicate values and dropping them
+df.duplicated().sum()
+df.drop_duplicates(inplace=True)
+
+# Most common ratings
+print(df['rating'].value_counts().head(10))
+
+# Most productive countries
+print(df['country'].value_counts().head(10))
+
+# Count of Movies vs TV Shows
+print(df['type'].value_counts())
+
+#count of movies and tv shows produced by each country
+country_type_counts = df.groupby(['country', 'type']).size().reset_index(name='count')
+print(country_type_counts)
+
+#top 10 countries that produce most netflix titles
+top_countries = df['country'].value_counts().head(10).index
+print(top_countries)
+
+VISUALIZATIONS
+
+#distribution of movie durations
+df_movies = df[df['type'] == 'Movie'].copy()
+df_movies['duration'] = df_movies['duration'].astype(str)
+df_movies['duration_minutes'] = pd.to_numeric(df_movies['duration'].str.extract(r'(\d+)')[0], errors='coerce')
+sns.histplot(df_movies['duration_minutes'].dropna(), bins=30, color='purple')
+plt.title('Distribution of Movie Durations')
+plt.xlabel('Duration (Minutes)')
+plt.ylabel('Count')
+plt.show()
+
+#top 10 directors with most titles on netflix
+top_directors = df['director'].value_counts().dropna().head(10)
+plt.figure(figsize=(10, 5))
+sns.barplot(x=top_directors.values, y=top_directors.index, palette='coolwarm')
+plt.title('Top 10 Directors with Most Titles on Netflix')
+plt.xlabel('Number of Titles')
+plt.ylabel('Director')
+plt.tight_layout()
+plt.show()
+
+#top 10 ratings on netflix
+rating_counts = df['rating'].value_counts().head(10)
+plt.figure(figsize=(10, 6))
+sns.barplot(x=rating_counts.index, y=rating_counts.values, palette='Set2')
+plt.title('Top 10 Ratings on Netflix')
+plt.xlabel('Rating')
+plt.ylabel('Number of Titles')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+#Number of Titles Released Per Year
+sns.histplot(data=df, x='release_year', bins=30, kde=True)
+plt.title('Content Release Trend Over Years')
+plt.xlabel('Release Year')
+plt.ylabel('Number of Titles')
+plt.show()
+
+#top 10 countries producing netflix content
+top_countries = df['country'].value_counts().dropna().head(10)
+plt.figure(figsize=(10, 6))
+sns.barplot(x=top_countries.values, y=top_countries.index, palette='mako')
+plt.title('Top 10 Countries Producing Netflix Content')
+plt.xlabel('Number of Titles')
+plt.ylabel('Country')
+plt.tight_layout()
+plt.show()
+
+#Distribution of Ratings
+plt.figure(figsize=(10, 6))
+sns.countplot(data=df, x='rating', palette='Set2', order=df['rating'].value_counts().index)
+plt.title('Distribution of Ratings on Netflix')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+#paiplot of duration, release year and ratings
+df_movies = df[df['type'] == 'Movie'].copy()
+
+# Convert 'duration' to numeric (minutes)
+df_movies['duration'] = df_movies['duration'].astype(str)
+df_movies['duration_minutes'] = pd.to_numeric(df_movies['duration'].str.extract(r'(\d+)')[0], errors='coerce')
+
+# Convert 'rating' to numeric if possible (not typically numeric but may contain values like "18", "13+", etc.)
+df_movies['rating_numeric'] = pd.to_numeric(df_movies['rating'].str.extract(r'(\d+)')[0], errors='coerce')
+
+# Drop rows with missing values in these columns
+df_clean = df_movies.dropna(subset=['duration_minutes', 'release_year', 'rating_numeric'])
+
+# Plot pairplot
+sns.pairplot(df_clean[['duration_minutes', 'release_year', 'rating_numeric']])
+plt.suptitle('Pair Plot: Duration, Release Year, Rating (Numeric)', y=1.02)
+plt.tight_layout()
+plt.show()
+
+#most frequent genres
+from collections import Counter
+# Flatten and count genres
+genres = df['listed_in'].dropna().str.split(', ')
+genre_counts = Counter([genre for sublist in genres for genre in sublist])
+top_genres = pd.Series(dict(genre_counts)).sort_values(ascending=False).head(10)
+# Plot
+plt.figure(figsize=(10, 6))
+sns.barplot(x=top_genres.values, y=top_genres.index, palette='viridis')
+plt.title('Top 10 Most Frequent Genres')
+plt.xlabel('Count')
+plt.ylabel('Genre')
+plt.tight_layout()
+plt.show()
+
+#top 10 directors on netflix
+top_directors = df['director'].value_counts().dropna().head(10)
+plt.figure(figsize=(10, 5))
+sns.barplot(x=top_directors.values, y=top_directors.index, palette='coolwarm')
+plt.title('Top 10 Directors on Netflix')
+plt.xlabel('Number of Titles')
+plt.ylabel('Director')
+plt.tight_layout()
+plt.show()
+
+#top 10 countries: movies vs tvshows
+# Create a pivot table
+country_type = df.pivot_table(index='country', columns='type', aggfunc='size', fill_value=0)
+top_countries = country_type.sum(axis=1).sort_values(ascending=False).head(10)
+heatmap_data = country_type.loc[top_countries.index]
+# Plot heatmap
+plt.figure(figsize=(10, 6))
+sns.heatmap(heatmap_data, annot=True, fmt='d', cmap='YlGnBu')
+plt.title('Top 10 Countries: Movies vs TV Shows')
+plt.tight_layout()
+plt.show()
+
+#movie duration by rating
+# Load and preprocess
+df = pd.read_csv("netflix_titles.csv")
+df_movies = df[df['type'] == 'Movie'].copy()
+# Ensure duration is string then extract numeric part
+df_movies['duration'] = df_movies['duration'].astype(str)
+df_movies['duration_minutes'] = pd.to_numeric(df_movies['duration'].str.extract(r'(\d+)')[0], errors='coerce')
+# Drop missing values
+df_movies_clean = df_movies.dropna(subset=['duration_minutes', 'rating'])
+# Plot
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=df_movies_clean, x='rating', y='duration_minutes', palette='Set3')
+plt.title('Box Plot of Movie Duration by Rating')
+plt.xlabel('Rating')
+plt.ylabel('Duration (Minutes)')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Count each type
+type_counts = df['type'].value_counts()
+# Pie chart
+plt.figure(figsize=(6, 6))
+plt.pie(type_counts, labels=type_counts.index, autopct='%1.1f%%', colors=['#66b3ff', '#ff9999'], startangle=90, explode=(0.05, 0.05))
+plt.title('Distribution of Content Types on Netflix')
+plt.tight_layout()
+plt.show()
